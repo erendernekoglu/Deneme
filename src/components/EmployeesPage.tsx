@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Search, Phone, Mail, User, Building2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Phone, Mail, User } from 'lucide-react';
 import { Employee, Department } from '../types';
 
 interface EmployeesPageProps {
@@ -131,55 +131,57 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({
 
       {/* Employees Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEmployees.map((employee) => (
+        {filteredEmployees.map((employee) => {
           const department = getDepartment(employee.departmentId);
-          <div key={employee.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mr-4">
-                  <User size={24} className="text-gray-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">{employee.name}</h3>
+          return (
+            <div key={employee.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                    <User size={24} className="text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">{employee.name}</h3>
                     {department && (
                       <div className="flex items-center mt-1">
-                        <div 
+                        <div
                           className="w-3 h-3 rounded-full mr-2"
                           style={{ backgroundColor: department.color }}
                         ></div>
                         <p className="text-xs text-gray-500">{department.name}</p>
                       </div>
                     )}
-                  <p className="text-sm text-gray-600">{employee.position}</p>
+                    <p className="text-sm text-gray-600">{employee.position}</p>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleEdit(employee)}
+                    className="text-blue-600 hover:text-blue-800 p-1"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(employee.id)}
+                    className="text-red-600 hover:text-red-800 p-1"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEdit(employee)}
-                  className="text-blue-600 hover:text-blue-800 p-1"
-                >
-                  <Edit size={16} />
-                </button>
-                <button
-                  onClick={() => handleDelete(employee.id)}
-                  className="text-red-600 hover:text-red-800 p-1"
-                >
-                  <Trash2 size={16} />
-                </button>
+              <div className="space-y-2">
+                <div className="flex items-center text-sm text-gray-600">
+                  <Mail size={16} className="mr-2" />
+                  {employee.email}
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <Phone size={16} className="mr-2" />
+                  {employee.phone}
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center text-sm text-gray-600">
-                <Mail size={16} className="mr-2" />
-                {employee.email}
-              </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Phone size={16} className="mr-2" />
-                {employee.phone}
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {filteredEmployees.length === 0 && (
