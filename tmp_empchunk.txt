@@ -1,0 +1,14 @@
+            <button
+              className="p-2 hover:bg-gray-100 rounded"
+              onClick={() => setWeekStart((d) => {
+                const x = new Date(d);
+                x.setUTCDate(x.getUTCDate() + 7);
+                return x;
+              })}
+              title="Hafta İleri"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      </div>

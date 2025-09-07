@@ -1,10 +1,21 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    exclude: ['lucide-react'],
+  optimizeDeps: { exclude: ['lucide-react'] },
+  server: {
+    // Improve reliability on Windows/OneDrive by using polling file watcher
+    watch: {
+      usePolling: true,
+      interval: 200,
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
-});
+})
