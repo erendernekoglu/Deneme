@@ -1,37 +1,43 @@
 import React, { useState } from 'react';
-import { Users, Calendar, Settings, BarChart3, User, LogOut, Building2 } from 'lucide-react';
+import { Users, Calendar, Settings, BarChart3, User, LogOut, Building2, Moon, Sun } from 'lucide-react';
 import AdminDashboard from './components/AdminDashboard';
 import EmployeeView from './components/EmployeeView';
 import EmployeesPage from './components/EmployeesPage';
 import ShiftTemplatesPage from './components/ShiftTemplatesPage';
 import SchedulesPage from './components/SchedulesPage';
 import DepartmentsPage from './components/DepartmentsPage';
-import { UserRole, Employee, ShiftTemplate, ShiftAssignment, Department } from './types';
+import ReportsPage from './components/ReportsPage';
+import AvailabilityRequestsPage from './components/AvailabilityRequestsPage';
+import SwapRequestsPage from './components/SwapRequestsPage';
+import type { UserRole, Employee, ShiftTemplate, ShiftAssignment, Department } from './types';
+import { api } from './lib/api';
+import type { Department as ApiDepartment } from './types/api';
+import Login from './pages/Login';
 
-// Mock data
+// Mock data (UI tipleri)
 const mockDepartments: Department[] = [
-  { id: '1', name: 'AR-GE Birimi', color: '#3B82F6', description: 'Araştırma ve Geliştirme' },
-  { id: '2', name: 'Muhasebe Birimi', color: '#10B981', description: 'Mali İşler ve Muhasebe' },
-  { id: '3', name: 'Yönetim Birimi', color: '#8B5CF6', description: 'Üst Düzey Yönetim' },
+  { id: '1', name: 'AR-GE Birimi',     color: '#3B82F6', description: 'Araştırma ve Geliştirme' },
+  { id: '2', name: 'Muhasebe Birimi',  color: '#10B981', description: 'Mali İşler ve Muhasebe' },
+  { id: '3', name: 'Yönetim Birimi',   color: '#8B5CF6', description: 'Üst Düzey Yönetim' },
   { id: '4', name: 'İnsan Kaynakları', color: '#F59E0B', description: 'İK ve Personel İşleri' },
 ];
 
 const mockEmployees: Employee[] = [
-  { id: '1', name: 'Ahmet Yılmaz', email: 'ahmet@firma.com', position: 'Yazılım Geliştirici', phone: '0555 123 4567', departmentId: '1' },
-  { id: '2', name: 'Fatma Demir', email: 'fatma@firma.com', position: 'Mali Müşavir', phone: '0555 234 5678', departmentId: '2' },
-  { id: '3', name: 'Mehmet Kara', email: 'mehmet@firma.com', position: 'Genel Müdür', phone: '0555 345 6789', departmentId: '3' },
-  { id: '4', name: 'Ayşe Öz', email: 'ayse@firma.com', position: 'İK Uzmanı', phone: '0555 456 7890', departmentId: '4' },
-  { id: '5', name: 'Can Özkan', email: 'can@firma.com', position: 'Araştırmacı', phone: '0555 567 8901', departmentId: '1' },
-  { id: '6', name: 'Zeynep Kaya', email: 'zeynep@firma.com', position: 'Muhasebeci', phone: '0555 678 9012', departmentId: '2' },
+  { id: '1', name: 'Ahmet Yılmaz',  email: 'ahmet@firma.com',  position: 'Yazılım Geliştirici', phone: '0555 123 4567', departmentId: '1' },
+  { id: '2', name: 'Fatma Demir',   email: 'fatma@firma.com',  position: 'Mali Müşavir',        phone: '0555 234 5678', departmentId: '2' },
+  { id: '3', name: 'Mehmet Kara',   email: 'mehmet@firma.com', position: 'Genel Müdür',         phone: '0555 345 6789', departmentId: '3' },
+  { id: '4', name: 'Ayşe Öz',       email: 'ayse@firma.com',   position: 'İK Uzmanı',           phone: '0555 456 7890', departmentId: '4' },
+  { id: '5', name: 'Can Özkan',     email: 'can@firma.com',    position: 'Araştırmacı',         phone: '0555 567 8901', departmentId: '1' },
+  { id: '6', name: 'Zeynep Kaya',   email: 'zeynep@firma.com', position: 'Muhasebeci',          phone: '0555 678 9012', departmentId: '2' },
 ];
 
 const mockShiftTemplates: ShiftTemplate[] = [
-  { id: '1', name: 'Gündüz', code: 'G', startTime: '08:00', endTime: '16:00', color: '#FEF3C7', departmentId: '1' },
-  { id: '2', name: 'Akşam', code: 'A', startTime: '16:00', endTime: '00:00', color: '#FED7AA', departmentId: '1' },
-  { id: '3', name: 'Gece', code: 'N', startTime: '00:00', endTime: '08:00', color: '#E9D5FF', departmentId: '1' },
+  { id: '1', name: 'Gündüz',       code: 'G', startTime: '08:00', endTime: '16:00', color: '#FEF3C7', departmentId: '1' },
+  { id: '2', name: 'Akşam',        code: 'A', startTime: '16:00', endTime: '00:00', color: '#FED7AA', departmentId: '1' },
+  { id: '3', name: 'Gece',         code: 'N', startTime: '00:00', endTime: '08:00', color: '#E9D5FF', departmentId: '1' },
   { id: '4', name: 'Normal Mesai', code: 'M', startTime: '09:00', endTime: '17:00', color: '#DBEAFE', departmentId: '2' },
-  { id: '5', name: 'Esnek Mesai', code: 'E', startTime: '10:00', endTime: '18:00', color: '#D1FAE5', departmentId: '3' },
-  { id: '6', name: 'Yarım Gün', code: 'Y', startTime: '09:00', endTime: '13:00', color: '#FEE2E2', departmentId: '4' },
+  { id: '5', name: 'Esnek Mesai',  code: 'E', startTime: '10:00', endTime: '18:00', color: '#D1FAE5', departmentId: '3' },
+  { id: '6', name: 'Yarım Gün',    code: 'Y', startTime: '09:00', endTime: '13:00', color: '#FEE2E2', departmentId: '4' },
 ];
 
 const mockShiftAssignments: ShiftAssignment[] = [
@@ -44,114 +50,316 @@ const mockShiftAssignments: ShiftAssignment[] = [
   { id: '7', employeeId: '6', date: '2024-01-15', shiftTemplateId: '4' },
 ];
 
+type AuthUser = { id: string; email: string; fullName: string; role: 'ADMIN' | 'EMPLOYEE' } | null;
+
+function decodeJwt(token: string): any | null {
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
 function App() {
-  const [currentUser] = useState<UserRole>('admin'); // In real app, this would come from auth
+  const [authUser, setAuthUser] = useState<AuthUser>(() => {
+    try {
+      const t = (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined' && sessionStorage.getItem('token'))
+        || (typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage.getItem('token'))
+        || null;
+      if (!t) return null;
+      const p = decodeJwt(t);
+      if (p && (p.role === 'ADMIN' || p.role === 'EMPLOYEE') && p.sub) {
+        return { id: String(p.sub), email: p.email, fullName: p.fullName ?? p.email, role: p.role };
+      }
+    } catch {}
+    return null;
+  });
+  const currentUser: UserRole = authUser?.role === 'ADMIN' ? 'admin' : 'employee';
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light';
+    const stored = localStorage.getItem('theme');
+    if (stored === 'light' || stored === 'dark') return stored as 'light' | 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  // UI katmanındaki mock state (AdminDashboard bu state'i kullanıyor)
   const [departments, setDepartments] = useState<Department[]>(mockDepartments);
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
-  const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>(mockShiftTemplates);
-  const [shiftAssignments, setShiftAssignments] = useState<ShiftAssignment[]>(mockShiftAssignments);
+  const [employees] = useState<Employee[]>(mockEmployees);
+  const [shiftTemplates] = useState<ShiftTemplate[]>(mockShiftTemplates);
+  const [shiftAssignments] = useState<ShiftAssignment[]>(mockShiftAssignments);
+
+  React.useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    try { localStorage.setItem('theme', theme); } catch {}
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   const adminMenuItems = [
-    { id: 'dashboard', label: 'Gösterge Paneli', icon: BarChart3 },
-    { id: 'departments', label: 'Birimler', icon: Building2 },
-    { id: 'employees', label: 'Çalışanlar', icon: Users },
-    { id: 'templates', label: 'Vardiya Şablonları', icon: Settings },
-    { id: 'schedules', label: 'Programlar', icon: Calendar },
+    { id: 'dashboard',  label: 'Gösterge Paneli',     icon: BarChart3 },
+    { id: 'departments',label: 'Birimler',             icon: Building2 },
+    { id: 'employees',  label: 'Çalışanlar',           icon: Users },
+    { id: 'templates',  label: 'Vardiya Şablonları',   icon: Settings },
+    { id: 'schedules',  label: 'Programlar',           icon: Calendar },
+    { id: 'availability', label: 'Müsaitlik',          icon: User },
+    { id: 'reports',    label: 'Raporlar',             icon: BarChart3 },
   ];
 
-  const filteredEmployees = selectedDepartment === 'all' 
-    ? employees 
-    : employees.filter(emp => emp.departmentId === selectedDepartment);
-
-  const filteredShiftTemplates = selectedDepartment === 'all' 
-    ? shiftTemplates 
-    : shiftTemplates.filter(template => template.departmentId === selectedDepartment);
+  // URL yoluna göre ayrık ekran seçimi
+  try {
+    const __path = typeof window !== 'undefined' ? window.location.pathname : '/';
+    // Root ('/') => redirect to /employee, then render appropriate view
+    if (__path === '/') {
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', '/employee');
+      }
+      if (!authUser) {
+        return (
+          <Login
+            onSuccess={(res) => {
+              setAuthUser(res.user);
+            }}
+          />
+        );
+      }
+      return <EmployeeView />;
+    }
+    // Admin route
+    if (__path.startsWith('/admin')) {
+      if (!authUser) {
+        return (
+          <Login
+            onSuccess={(res) => {
+              setAuthUser(res.user);
+            }}
+          />
+        );
+      }
+      if (authUser.role !== 'ADMIN') {
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(null, '', '/employee');
+        }
+        return <EmployeeView />;
+      }
+      // If ADMIN, fall through to default admin panel render below
+    }
+    if (__path.startsWith('/employee')) {
+      if (!authUser) {
+        return (
+          <Login
+            onSuccess={(res) => {
+              setAuthUser(res.user);
+            }}
+          />
+        );
+      }
+      return <EmployeeView />;
+    }
+  } catch {}
 
   const renderAdminContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <AdminDashboard 
-          departments={departments}
-          employees={employees} 
-          shiftTemplates={shiftTemplates} 
-          shiftAssignments={shiftAssignments} 
-          selectedDepartment={selectedDepartment}
-          setSelectedDepartment={setSelectedDepartment}
-        />;
+        return (
+          <AdminDashboard
+            departments={departments}
+            employees={employees}
+            shiftTemplates={shiftTemplates}
+            shiftAssignments={shiftAssignments}
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
+        );
       case 'departments':
         return <DepartmentsPage departments={departments} setDepartments={setDepartments} />;
       case 'employees':
-        return <EmployeesPage 
-          employees={filteredEmployees} 
-          setEmployees={setEmployees} 
-          departments={departments}
-          selectedDepartment={selectedDepartment}
-          setSelectedDepartment={setSelectedDepartment}
-        />;
+        return (
+          <EmployeesPage
+            departments={departments}
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+          />
+        );
       case 'templates':
-        return <ShiftTemplatesPage 
-          shiftTemplates={filteredShiftTemplates} 
-          setShiftTemplates={setShiftTemplates} 
-          departments={departments}
-          selectedDepartment={selectedDepartment}
-          setSelectedDepartment={setSelectedDepartment}
-        />;
+        return (
+          <ShiftTemplatesPage
+            departments={departments}
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+          />
+        );
       case 'schedules':
-        return <SchedulesPage 
-          employees={filteredEmployees} 
-          shiftTemplates={filteredShiftTemplates} 
-          shiftAssignments={shiftAssignments} 
-          setShiftAssignments={setShiftAssignments}
-          departments={departments}
-          selectedDepartment={selectedDepartment}
-          setSelectedDepartment={setSelectedDepartment}
-        />;
+        return (
+          <SchedulesPage
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+            departments={departments}
+          />
+        );
+      case 'reports':
+        return (
+          <ReportsPage
+            selectedDepartment={selectedDepartment}
+            departments={departments}
+          />
+        );
+      case 'availability':
+        return (
+          <AvailabilityRequestsPage
+            selectedDepartment={selectedDepartment}
+            departments={departments}
+          />
+        );
+      case 'swaps':
+        return (
+          <SwapRequestsPage />
+        );
       default:
-        return <AdminDashboard 
-          departments={departments}
-          employees={employees} 
-          shiftTemplates={shiftTemplates} 
-          shiftAssignments={shiftAssignments} 
-          selectedDepartment={selectedDepartment}
-          setSelectedDepartment={setSelectedDepartment}
-        />;
+        return (
+          <AdminDashboard
+            departments={departments}
+            employees={employees}
+            shiftTemplates={shiftTemplates}
+            shiftAssignments={shiftAssignments}
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
+        );
     }
   };
 
-  if (currentUser === 'employee') {
-    // In real app, get current employee's department
-    const currentEmployee = employees.find(emp => emp.id === '1');
-    const employeeDepartmentTemplates = shiftTemplates.filter(template => 
-      template.departmentId === currentEmployee?.departmentId
+  // Global filtre için birimleri backend'den yükle (başarısız olursa mock kalır)
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const depts = await api.get<ApiDepartment[]>('/departments');
+        const mapped = depts.map((d) => ({
+          id: d.id,
+          name: d.name,
+          color: d.color ?? '#3B82F6',
+          description: d.description ?? '',
+        }));
+        // Ensure 'Genel' option exists in selectors (synthetic if not in DB)
+        const hasGeneral = mapped.some((x) => (x.name || '').toLowerCase() === 'genel' || (x.name || '').toLowerCase() === 'general');
+        const finalList = hasGeneral
+          ? mapped
+          : [{ id: '__GENERAL__', name: 'Genel', color: '#3B82F6', description: 'Genel (tüm birimler)' }, ...mapped];
+        setDepartments(finalList);
+      } catch {
+        // sessizce mock veride kal
+      }
+    })();
+  }, []);
+
+  // Basit yol bazlı ayrım: /employee ve /login sayfaları
+  try {
+    const __path = typeof window !== 'undefined' ? window.location.pathname : '/';
+    if (__path.startsWith('/employee')) {
+      if (!authUser) {
+        return (
+          <Login
+            onSuccess={(res) => {
+              setAuthUser(res.user);
+            }}
+          />
+        );
+      }
+      return <EmployeeView />;
+    }
+    if (__path === '/login') {
+      if (!authUser) {
+        return (
+          <Login
+            onSuccess={(res) => {
+              setAuthUser(res.user);
+            }}
+          />
+        );
+      }
+      if (typeof window !== 'undefined') {
+        const dest = authUser.role === 'ADMIN' ? '/admin' : '/employee';
+        window.history.replaceState(null, '', dest);
+      }
+      if (authUser.role === 'EMPLOYEE') {
+        return <EmployeeView />;
+      }
+      // If ADMIN, fall through to admin panel render below
+    }
+  } catch {}
+
+  // ---------- DEĞİŞTİRİLEN KISIM: Auth akışı ----------
+  // 1) Giriş yapılmamışsa Login göster
+  if (!authUser) {
+    return (
+      <Login
+        onSuccess={(res) => {
+          setAuthUser(res.user);
+        }}
+      />
     );
-    return <EmployeeView 
-      shiftTemplates={employeeDepartmentTemplates} 
-      shiftAssignments={shiftAssignments.filter(a => a.employeeId === '1')}
-      departments={departments}
-      currentEmployee={currentEmployee}
-    />;
   }
 
+  // 2) Çalışan ise EmployeeView göster
+  if (currentUser === 'employee') {
+    return <EmployeeView />;
+  }
+  // ----------------------------------------------------
+
+  // 3) Admin ise panel
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 dark:text-gray-100">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-800">Vardiya Yönetimi</h1>
-          <p className="text-sm text-gray-600 mt-1">Admin Paneli</p>
+      <div className="w-64 bg-white dark:bg-gray-800 shadow-lg relative">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Vardiya Yönetimi</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Admin Paneli</p>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className="inline-flex items-center gap-2 px-2 py-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 shadow hover:bg-gray-50 dark:hover:bg-gray-600"
+              aria-label="Tema Değiştir"
+              title="Tema Değiştir"
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+          </div>
+          <div className="mt-4">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+              Birim Filtresi
+            </label>
+            <select
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">Tüm Birimler</option>
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        
+
         <nav className="mt-6">
           {adminMenuItems.map((item) => {
             const Icon = item.icon;
+            const active = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center px-6 py-3 text-left hover:bg-gray-50 transition-colors ${
-                  activeTab === item.id ? 'bg-blue-50 border-r-2 border-blue-500 text-blue-700' : 'text-gray-700'
+                className={`w-full flex items-center px-6 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                  active ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                 }`}
               >
                 <Icon size={20} className="mr-3" />
@@ -159,26 +367,46 @@ function App() {
               </button>
             );
           })}
+          {/* Extra menu item for Swap Requests */}
+          <button
+            key="swaps"
+            onClick={() => setActiveTab('swaps')}
+            className={`w-full flex items-center px-6 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+              activeTab === 'swaps' ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
+            }`}
+          >
+            <Users size={20} className="mr-3" />
+            Değişim
+          </button>
         </nav>
 
-        <div className="absolute bottom-0 w-64 p-6 border-t border-gray-200">
+        <div className="absolute bottom-0 w-64 p-6 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
               <User size={16} />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-800">Admin Kullanıcı</p>
-              <p className="text-xs text-gray-600">Yönetici</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Admin Kullanıcısı</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300">Yönetici</p>
             </div>
-            <LogOut size={16} className="ml-auto text-gray-400 cursor-pointer hover:text-gray-600" />
+            <button
+              onClick={() => {
+                try { sessionStorage.removeItem('token'); } catch {}
+                try { localStorage.removeItem('token'); } catch {}
+                setAuthUser(null);
+              }}
+              className="ml-auto text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-200"
+              title="Çıkış"
+              aria-label="Çıkış"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {renderAdminContent()}
-      </div>
+      <div className="flex-1 overflow-auto">{renderAdminContent()}</div>
     </div>
   );
 }

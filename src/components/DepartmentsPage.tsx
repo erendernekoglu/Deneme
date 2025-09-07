@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Building2, Users, Palette } from 'lucide-react';
-import { Department } from '../types';
+import { Plus, Edit, Trash2, Building2, Users } from 'lucide-react';
+import type { Department } from '../types';
+import type { Department as ApiDepartment } from '../types/api';
+import { api } from '../lib/api';
 
 interface DepartmentsPageProps {
   departments: Department[];
@@ -13,7 +15,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    color: '#3B82F6'
+    color: '#3B82F6',
   });
 
   const colorOptions = [
@@ -27,20 +29,39 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
     { name: 'Teal', value: '#14B8A6' },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingDepartment) {
-      setDepartments(departments.map(dept => 
-        dept.id === editingDepartment.id 
-          ? { ...dept, ...formData }
-          : dept
-      ));
+      const updated = await api.put<ApiDepartment>(`/departments/${editingDepartment.id}`, {
+        name: formData.name.trim(),
+        color: formData.color,
+        description: formData.description,
+      });
+      setDepartments((prev) =>
+        prev.map((dept) =>
+          dept.id === editingDepartment.id
+            ? {
+                id: updated.id,
+                name: updated.name,
+                color: updated.color ?? formData.color,
+                description: updated.description ?? formData.description,
+              }
+            : dept
+        )
+      );
     } else {
+      const created = await api.post<ApiDepartment>('/departments', {
+        name: formData.name.trim(),
+        color: formData.color,
+        description: formData.description,
+      });
       const newDepartment: Department = {
-        id: Date.now().toString(),
-        ...formData
+        id: created.id,
+        name: created.name,
+        color: created.color ?? formData.color,
+        description: created.description ?? formData.description,
       };
-      setDepartments([...departments, newDepartment]);
+      setDepartments((prev) => [newDepartment, ...prev]);
     }
     resetForm();
   };
@@ -50,14 +71,34 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
     setFormData({
       name: department.name,
       description: department.description,
-      color: department.color
+      color: department.color,
     });
     setIsModalOpen(true);
   };
 
+  // Persisted delete via API
+  const handleDeleteApi = async (id: string) => {
+    if (window.confirm('Bu birimi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+      await api.del(`/departments/${id}`);
+      setDepartments((prev) => prev.filter((dept) => dept.id !== id));
+    }
+  };
+
+  // Safer variant with better confirmations and error handling
+  const handleDeleteApiSafe = async (id: string) => {
+    if (!window.confirm('Bu birimi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
+    try {
+      await api.del(`/departments/${id}`);
+      setDepartments((prev) => prev.filter((dept) => dept.id !== id));
+      alert('Birim silindi.');
+    } catch (e: any) {
+      alert(`Silme başarısız: ${e?.message ?? 'Bilinmeyen hata'}`);
+    }
+  };
+
   const handleDelete = (id: string) => {
     if (window.confirm('Bu birimi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
-      setDepartments(departments.filter(dept => dept.id !== id));
+      setDepartments((prev) => prev.filter((dept) => dept.id !== id));
     }
   };
 
@@ -87,7 +128,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {departments.map((department) => (
           <div key={department.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div 
+            <div
               className="h-20 rounded-t-lg flex items-center justify-center"
               style={{ backgroundColor: department.color }}
             >
@@ -103,12 +144,14 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
                   <button
                     onClick={() => handleEdit(department)}
                     className="text-blue-600 hover:text-blue-800 p-1"
+                    title="Düzenle"
                   >
                     <Edit size={16} />
                   </button>
                   <button
-                    onClick={() => handleDelete(department.id)}
+                    onClick={() => handleDeleteApiSafe(department.id)}
                     className="text-red-600 hover:text-red-800 p-1"
+                    title="Sil"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -117,10 +160,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
               <div className="flex items-center text-sm text-gray-500">
                 <Users size={16} className="mr-2" />
                 <span>Birim Rengi: </span>
-                <div 
-                  className="w-4 h-4 rounded-full ml-2"
-                  style={{ backgroundColor: department.color }}
-                ></div>
+                <div className="w-4 h-4 rounded-full ml-2" style={{ backgroundColor: department.color }} />
               </div>
             </div>
           </div>
@@ -136,7 +176,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">
               {editingDepartment ? 'Birim Düzenle' : 'Yeni Birim Ekle'}
@@ -144,9 +184,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
             <form onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Birim Adı
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Birim Adı</label>
                   <input
                     type="text"
                     required
@@ -157,9 +195,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Açıklama
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
                   <textarea
                     required
                     value={formData.description}
@@ -170,9 +206,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Birim Rengi
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Birim Rengi</label>
                   <div className="grid grid-cols-4 gap-2">
                     {colorOptions.map((option) => (
                       <button
@@ -180,25 +214,22 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
                         type="button"
                         onClick={() => setFormData({ ...formData, color: option.value })}
                         className={`w-12 h-12 rounded-lg border-2 transition-all flex items-center justify-center ${
-                          formData.color === option.value 
-                            ? 'border-gray-800 scale-110' 
-                            : 'border-gray-300 hover:scale-105'
+                          formData.color === option.value ? 'border-gray-800 scale-110' : 'border-gray-300 hover:scale-105'
                         }`}
                         style={{ backgroundColor: option.value }}
                         title={option.name}
                       >
-                        {formData.color === option.value && (
-                          <Building2 size={20} className="text-white" />
-                        )}
+                        {formData.color === option.value && <Building2 size={20} className="text-white" />}
                       </button>
                     ))}
                   </div>
                 </div>
+
                 {/* Preview */}
                 <div className="mt-6 p-4 border border-gray-200 rounded-lg">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Önizleme:</h4>
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div 
+                    <div
                       className="h-16 rounded-t-lg flex items-center justify-center"
                       style={{ backgroundColor: formData.color }}
                     >
@@ -211,6 +242,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
                   </div>
                 </div>
               </div>
+
               <div className="flex justify-end space-x-4 mt-8">
                 <button
                   type="button"

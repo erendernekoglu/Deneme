@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Department {
+  id             String           @id @default(cuid())
+  name           String           @unique
+  color          String?
+  description    String?
+  employees      Employee[]
+  shiftTemplates ShiftTemplate[]
+  rosters        Roster[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+model Employee {
+  id           String            @id @default(cuid())
+  email        String            @unique
+  fullName     String
+  role         Role              @default(EMPLOYEE)
+  passwordHash String?
+  department   Department?       @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  active       Boolean           @default(true)
+  notes        AvailabilityNote[]
+  availabilityRequests AvailabilityRequest[]
+  assignments  ShiftAssignment[]
+  swapRequests SwapRequest[]
+  auditLogs    AuditLog[]        @relation("UserAuditLogs")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model ShiftTemplate {
+  id            String      @id @default(cuid())
+  department    Department  @relation(fields: [departmentId], references: [id])
+  departmentId  String
+
+  // Shift info
+  code          String
+  name          String
+  startMinutes  Int         // 0..1439
+  endMinutes    Int         // 0..1439
+  color         String      @default("#E5E7EB")
+
+  assignments   ShiftAssignment[]
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([departmentId])
+  @@index([code])
+}
+
+enum RosterStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Roster {
+  id           String            @id @default(cuid())
+  department   Department        @relation(fields: [departmentId], references: [id])
+  departmentId String
+  startDate    DateTime
+  endDate      DateTime
+  status       RosterStatus      @default(DRAFT)
+  version      Int               @default(1)
+  locked       Boolean           @default(false)
+  assignments  ShiftAssignment[]
+  createdAt    DateTime          @default(now())
+  publishedAt  DateTime?
+  updatedAt    DateTime          @updatedAt
+
+  @@index([departmentId, startDate, endDate])
+}
+
+enum ShiftKind {
+  REGULAR
+  OVERTIME
+}
+
+model ShiftAssignment {
+  id           String         @id @default(cuid())
+  roster       Roster         @relation(fields: [rosterId], references: [id])
+  rosterId     String
+  employee     Employee       @relation(fields: [employeeId], references: [id])
+  employeeId   String
+  date         DateTime
+  startMinutes Int
+  endMinutes   Int
+
+  // Optional link to a shift template
+  template     ShiftTemplate? @relation(fields: [templateId], references: [id])
+  templateId   String?
+
+  // Kind of assignment: regular or overtime
+  kind         ShiftKind      @default(REGULAR)
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Swap request back-relations
+  fromSwapRequests SwapRequest[] @relation("FromAssign")
+  toSwapRequests   SwapRequest[] @relation("ToAssign")
+
+  @@index([employeeId, date])
+  @@index([rosterId, date])
+  @@index([templateId])
+  @@unique([employeeId, date, startMinutes, endMinutes])
+}
+
+enum AvailabilityType {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+model AvailabilityNote {
+  id           String           @id @default(cuid())
+  employee     Employee         @relation(fields: [employeeId], references: [id])
+  employeeId   String
+  date         DateTime
+  startMinutes Int?
+  endMinutes   Int?
+  type         AvailabilityType @default(UNAVAILABLE)
+  note         String?
+  createdAt    DateTime         @default(now())
+
+  @@index([employeeId, date])
+}
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String
+  user      Employee? @relation("UserAuditLogs", fields: [userId], references: [id])
+  userId    String?
+  data      Json?
+  createdAt DateTime  @default(now())
+
+  @@index([entity, entityId])
+}
+
+enum SwapRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELED
+}
+
+model SwapRequest {
+  id               String          @id @default(cuid())
+  fromAssignment   ShiftAssignment @relation("FromAssign", fields: [fromAssignmentId], references: [id])
+  fromAssignmentId String
+  toAssignment     ShiftAssignment @relation("ToAssign", fields: [toAssignmentId], references: [id])
+  toAssignmentId   String
+  requestedBy      Employee        @relation(fields: [requestedById], references: [id])
+  requestedById    String
+  status           SwapRequestStatus @default(PENDING)
+  createdAt        DateTime        @default(now())
+  decidedAt        DateTime?
+
+  @@index([fromAssignmentId])
+  @@index([toAssignmentId])
+  @@index([requestedById])
+}
+
+// Employee availability request workflow (requires admin decision)
+enum AvailabilityRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model AvailabilityRequest {
+  id           String                      @id @default(cuid())
+  employee     Employee                    @relation(fields: [employeeId], references: [id])
+  employeeId   String
+  date         DateTime
+  startMinutes Int?
+  endMinutes   Int?
+  note         String?
+  status       AvailabilityRequestStatus   @default(PENDING)
+  createdAt    DateTime                    @default(now())
+  decidedAt    DateTime?
+
+  @@index([employeeId, date])
+}
