@@ -34,6 +34,9 @@ if not defined APIREADY (
 )
 
 echo API server is ready! Starting Web client...
+echo Waiting 5 seconds for API server to fully initialize...
+timeout /t 5 >nul
+
 start "Web (vite)" cmd /k "cd /d %~dp0 && npm run dev"
 
 echo Done. Database, API server, and Web client should all be running.
