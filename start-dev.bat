@@ -4,10 +4,10 @@ setlocal ENABLEDELAYEDEXPANSION
 REM Change to the directory of this script
 cd /d %~dp0
 
-echo [1/4] Ensuring Postgres (Docker) is running...
+echo [1/5] Starting Postgres (Docker)...
 docker compose up -d
 
-echo [2/4] Waiting for Postgres to become healthy...
+echo [2/5] Waiting for Postgres to become healthy...
 set PGSTATUS=
 :wait_pg
 for /f "usebackq delims=" %%i in (`docker inspect -f "{{.State.Health.Status}}" roster-postgres 2^>NUL`) do set PGSTATUS=%%i
@@ -17,7 +17,7 @@ if /i "%PGSTATUS%" NEQ "healthy" (
   goto wait_pg
 )
 
-echo [3/4] Generating Prisma client and syncing schema...
+echo [3/5] Generating Prisma client and syncing schema...
 cmd /c "cd /d %~dp0server && npx prisma generate && npm run db:push"
 
 echo [4/5] Starting API server...
@@ -36,5 +36,5 @@ if not defined APIREADY (
 echo API server is ready! Starting Web client...
 start "Web (vite)" cmd /k "cd /d %~dp0 && npm run dev"
 
-echo Done. Two terminals should open: API and Web.
+echo Done. Database, API server, and Web client should all be running.
 endlocal
