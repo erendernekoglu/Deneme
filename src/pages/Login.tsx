@@ -23,6 +23,7 @@ export default function Login({ onSuccess }: LoginProps) {
     setLoading(true);
     try {
       const res = await api.post<LoginResponse>('/auth/login', { email, password });
+      if (!res) throw new Error('Sunucu yanıtı yok');
       try {
         if (remember) {
           localStorage.setItem('token', res.token);

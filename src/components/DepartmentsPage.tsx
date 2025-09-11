@@ -37,31 +37,34 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
         color: formData.color,
         description: formData.description,
       });
-      setDepartments((prev) =>
-        prev.map((dept) =>
-          dept.id === editingDepartment.id
-            ? {
-                id: updated.id,
-                name: updated.name,
-                color: updated.color ?? formData.color,
-                description: updated.description ?? formData.description,
-              }
-            : dept
-        )
-      );
+      if (updated)
+        setDepartments((prev) =>
+          prev.map((dept) =>
+            dept.id === editingDepartment.id
+              ? {
+                  id: updated.id,
+                  name: updated.name,
+                  color: updated.color ?? formData.color,
+                  description: updated.description ?? formData.description,
+                }
+              : dept
+          )
+        );
     } else {
       const created = await api.post<ApiDepartment>('/departments', {
         name: formData.name.trim(),
         color: formData.color,
         description: formData.description,
       });
-      const newDepartment: Department = {
-        id: created.id,
-        name: created.name,
-        color: created.color ?? formData.color,
-        description: created.description ?? formData.description,
-      };
-      setDepartments((prev) => [newDepartment, ...prev]);
+      if (created) {
+        const newDepartment: Department = {
+          id: created.id,
+          name: created.name,
+          color: created.color ?? formData.color,
+          description: created.description ?? formData.description,
+        };
+        setDepartments((prev) => [newDepartment, ...prev]);
+      }
     }
     resetForm();
   };

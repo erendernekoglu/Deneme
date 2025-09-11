@@ -65,13 +65,13 @@ const EmployeeView: React.FC = () => {
           }
           return;
         }
-        const candidate = emps.find((e) => e.id === selectedId) ?? null;
+        const candidate = (emps ?? []).find((e) => e.id === selectedId) ?? null;
         if (!candidate) {
           setError('Kullanıcı bulunamadı');
           return;
         }
         setMe(candidate);
-        setTemplates(tpls);
+        setTemplates(tpls ?? []);
       } catch (e: any) {
         setError(e?.message ?? 'Yükleme hatası');
       } finally {
@@ -98,8 +98,8 @@ const EmployeeView: React.FC = () => {
           api.get<ShiftAssignment[]>(`/assignments?${qs}`),
           api.get<AvailabilityRequest[]>(`/availability-requests?${qs}`),
         ]);
-        setAssignments(list);
-        setRequests(reqs);
+        setAssignments(list ?? []);
+        setRequests(reqs ?? []);
       } catch (e: any) {
         setError(e?.message ?? 'Atamalar yüklenemedi');
       } finally {
@@ -199,7 +199,7 @@ const EmployeeView: React.FC = () => {
       if (reqEnd) body.end = reqEnd;
       if (reqNote) body.note = reqNote;
       const created = await api.post<AvailabilityRequest>('/availability-requests', body);
-      setRequests((prev) => [...prev, created]);
+      if (created) setRequests((prev) => [...prev, created]);
       setReqOpen(false);
       setToast('Talebiniz iletildi');
     } catch (e: any) {
@@ -221,7 +221,7 @@ const EmployeeView: React.FC = () => {
       }
       if (reqNote) body.note = reqNote;
       const created = await api.post<AvailabilityRequest>('/availability-requests', body);
-      setRequests((prev) => [...prev, created]);
+      if (created) setRequests((prev) => [...prev, created]);
       setReqOpen(false);
       setToast('Talebiniz iletildi');
     } catch (e: any) {

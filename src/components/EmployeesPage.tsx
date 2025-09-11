@@ -40,7 +40,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({
     (async () => {
       try {
         const emps = await api.get<Employee[]>('/employees');
-        setEmployees(emps);
+        setEmployees(emps ?? []);
       } finally {
         setLoading(false);
       }
@@ -135,12 +135,13 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({
         `/employees/${editingEmployee.id}`,
         payload
       );
-      setEmployees((prev) =>
-        prev.map((e) => (e.id === updated.id ? updated : e))
-      );
+      if (updated)
+        setEmployees((prev) =>
+          prev.map((e) => (e.id === updated.id ? updated : e))
+        );
     } else {
       const created = await api.post<Employee>('/employees', payload);
-      setEmployees((prev) => [created, ...prev]);
+      if (created) setEmployees((prev) => [created, ...prev]);
     }
     closeModal();
   };

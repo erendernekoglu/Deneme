@@ -41,7 +41,7 @@ const AvailabilityRequestsPage: React.FC<Props> = ({ selectedDepartment, departm
       if (dept && dept !== 'all') qs.set('departmentId', dept);
       if (status) qs.set('status', status);
       const data = await api.get<AvailabilityRequest[]>(`/availability-requests?${qs.toString()}`);
-      setList(data);
+      setList(data ?? []);
     } catch (e: any) {
       setError(e?.message ?? 'Talepler getirilemedi');
     } finally {
@@ -58,6 +58,7 @@ const AvailabilityRequestsPage: React.FC<Props> = ({ selectedDepartment, departm
   const approve = async (id: string) => {
     try {
       const upd = await api.post<AvailabilityRequest>(`/availability-requests/${id}/approve`, {});
+      if (!upd) return;
       setList((prev) => prev.map((r) => (r.id === id ? { ...r, status: upd.status, decidedAt: upd.decidedAt } : r)));
       try {
         const detail = { id: (upd as any).id, employeeId: (upd as any).employeeId, date: (upd as any).date, startMinutes: (upd as any).startMinutes ?? null, endMinutes: (upd as any).endMinutes ?? null, status: (upd as any).status } as any;
@@ -70,6 +71,7 @@ const AvailabilityRequestsPage: React.FC<Props> = ({ selectedDepartment, departm
   const reject = async (id: string) => {
     try {
       const upd = await api.post<AvailabilityRequest>(`/availability-requests/${id}/reject`, {});
+      if (!upd) return;
       setList((prev) => prev.map((r) => (r.id === id ? { ...r, status: upd.status, decidedAt: upd.decidedAt } : r)));
     } catch (e: any) {
       setError(e?.message ?? 'Reddetme başarısız');
