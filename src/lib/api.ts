@@ -1,4 +1,4 @@
-import useAuthToken from './useAuthToken';
+import getAuthToken from './getAuthToken';
 
 // Default API base uses Vite dev proxy (see vite.config.ts)
 // Override with VITE_API_BASE in production if needed.
@@ -25,7 +25,7 @@ export const api = {
     const r = await fetch(`${BASE}${p}`, { headers: withAuth({ Accept: 'application/json' }) });
     return handle<T>(r);
   },
-  async post<T>(p: string, body: any): Promise<T | undefined> {
+  async post<T>(p: string, body: unknown): Promise<T | undefined> {
     const r = await fetch(`${BASE}${p}`, {
       method: 'POST',
       headers: withAuth({ 'Content-Type': 'application/json', Accept: 'application/json' }),
@@ -33,7 +33,7 @@ export const api = {
     });
     return handle<T>(r);
   },
-  async put<T>(p: string, body: any): Promise<T | undefined> {
+  async put<T>(p: string, body: unknown): Promise<T | undefined> {
     const r = await fetch(`${BASE}${p}`, {
       method: 'PUT',
       headers: withAuth({ 'Content-Type': 'application/json', Accept: 'application/json' }),
@@ -41,7 +41,7 @@ export const api = {
     });
     return handle<T>(r);
   },
-  async patch<T>(p: string, body: any): Promise<T | undefined> {
+  async patch<T>(p: string, body: unknown): Promise<T | undefined> {
     const r = await fetch(`${BASE}${p}`, {
       method: 'PATCH',
       headers: withAuth({ 'Content-Type': 'application/json', Accept: 'application/json' }),
@@ -67,7 +67,6 @@ export const reports = {
 };
 
 function withAuth(init: Record<string, string>) {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const token = useAuthToken();
+  const token = getAuthToken();
   return token ? { ...init, Authorization: `Bearer ${token}` } : init;
 }

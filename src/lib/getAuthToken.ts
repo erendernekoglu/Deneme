@@ -1,4 +1,4 @@
-export function useAuthToken(): string | null {
+export function getAuthToken(): string | null {
   try {
     const session = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('token') : null;
     if (session) return session;
@@ -9,4 +9,4 @@ export function useAuthToken(): string | null {
   }
 }
 
-export default useAuthToken;
+export default getAuthToken;
