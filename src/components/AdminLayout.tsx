@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
 import { Users, Calendar, Settings, BarChart3, User, LogOut, Building2, Moon, Sun } from 'lucide-react';
-import AdminDashboard from './components/AdminDashboard';
-import EmployeeView from './components/EmployeeView';
-import EmployeesPage from './components/EmployeesPage';
-import ShiftTemplatesPage from './components/ShiftTemplatesPage';
-import SchedulesPage from './components/SchedulesPage';
-import DepartmentsPage from './components/DepartmentsPage';
-import ReportsPage from './components/ReportsPage';
-import AvailabilityRequestsPage from './components/AvailabilityRequestsPage';
-import SwapRequestsPage from './components/SwapRequestsPage';
-import type { UserRole, Employee, ShiftTemplate, ShiftAssignment, Department } from './types';
-import { api } from './lib/api';
-import type { Department as ApiDepartment } from './types/api';
-import Login from './pages/Login';
-import useAuthToken from './lib/useAuthToken';
+import AdminDashboard from './AdminDashboard';
+import EmployeesPage from './EmployeesPage';
+import ShiftTemplatesPage from './ShiftTemplatesPage';
+import SchedulesPage from './SchedulesPage';
+import DepartmentsPage from './DepartmentsPage';
+import ReportsPage from './ReportsPage';
+import AvailabilityRequestsPage from './AvailabilityRequestsPage';
+import SwapRequestsPage from './SwapRequestsPage';
+import type { Employee, ShiftTemplate, ShiftAssignment, Department } from '../types';
+import { api } from '../lib/api';
+import type { Department as ApiDepartment } from '../types/api';
+import { useAuth } from '../lib/useAuth';
 
 // Mock data (UI tipleri)
 const mockDepartments: Department[] = [
@@ -51,32 +49,8 @@ const mockShiftAssignments: ShiftAssignment[] = [
   { id: '7', employeeId: '6', date: '2024-01-15', shiftTemplateId: '4' },
 ];
 
-type AuthUser = { id: string; email: string; fullName: string; role: 'ADMIN' | 'EMPLOYEE' } | null;
-
-function decodeJwt(token: string): any | null {
-  try {
-    const payload = token.split('.')[1];
-    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-    return decoded;
-  } catch {
-    return null;
-  }
-}
-
-function App() {
-  const token = useAuthToken();
-  const [authUser, setAuthUser] = useState<AuthUser>(() => {
-    try {
-      const t = token;
-      if (!t) return null;
-      const p = decodeJwt(t);
-      if (p && (p.role === 'ADMIN' || p.role === 'EMPLOYEE') && p.sub) {
-        return { id: String(p.sub), email: p.email, fullName: p.fullName ?? p.email, role: p.role };
-      }
-    } catch {}
-    return null;
-  });
-  const currentUser: UserRole = authUser?.role === 'ADMIN' ? 'admin' : 'employee';
+function AdminLayout() {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -108,58 +82,6 @@ function App() {
     { id: 'availability', label: 'Müsaitlik',          icon: User },
     { id: 'reports',    label: 'Raporlar',             icon: BarChart3 },
   ];
-
-  // URL yoluna göre ayrık ekran seçimi
-  try {
-    const __path = typeof window !== 'undefined' ? window.location.pathname : '/';
-    // Root ('/') => redirect to /employee, then render appropriate view
-    if (__path === '/') {
-      if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', '/employee');
-      }
-      if (!authUser) {
-        return (
-          <Login
-            onSuccess={(res) => {
-              setAuthUser(res.user);
-            }}
-          />
-        );
-      }
-      return <EmployeeView />;
-    }
-    // Admin route
-    if (__path.startsWith('/admin')) {
-      if (!authUser) {
-        return (
-          <Login
-            onSuccess={(res) => {
-              setAuthUser(res.user);
-            }}
-          />
-        );
-      }
-      if (authUser.role !== 'ADMIN') {
-        if (typeof window !== 'undefined') {
-          window.history.replaceState(null, '', '/employee');
-        }
-        return <EmployeeView />;
-      }
-      // If ADMIN, fall through to default admin panel render below
-    }
-    if (__path.startsWith('/employee')) {
-      if (!authUser) {
-        return (
-          <Login
-            onSuccess={(res) => {
-              setAuthUser(res.user);
-            }}
-          />
-        );
-      }
-      return <EmployeeView />;
-    }
-  } catch {}
 
   const renderAdminContent = () => {
     switch (activeTab) {
@@ -257,61 +179,6 @@ function App() {
     })();
   }, []);
 
-  // Basit yol bazlı ayrım: /employee ve /login sayfaları
-  try {
-    const __path = typeof window !== 'undefined' ? window.location.pathname : '/';
-    if (__path.startsWith('/employee')) {
-      if (!authUser) {
-        return (
-          <Login
-            onSuccess={(res) => {
-              setAuthUser(res.user);
-            }}
-          />
-        );
-      }
-      return <EmployeeView />;
-    }
-    if (__path === '/login') {
-      if (!authUser) {
-        return (
-          <Login
-            onSuccess={(res) => {
-              setAuthUser(res.user);
-            }}
-          />
-        );
-      }
-      if (typeof window !== 'undefined') {
-        const dest = authUser.role === 'ADMIN' ? '/admin' : '/employee';
-        window.history.replaceState(null, '', dest);
-      }
-      if (authUser.role === 'EMPLOYEE') {
-        return <EmployeeView />;
-      }
-      // If ADMIN, fall through to admin panel render below
-    }
-  } catch {}
-
-  // ---------- DEĞİŞTİRİLEN KISIM: Auth akışı ----------
-  // 1) Giriş yapılmamışsa Login göster
-  if (!authUser) {
-    return (
-      <Login
-        onSuccess={(res) => {
-          setAuthUser(res.user);
-        }}
-      />
-    );
-  }
-
-  // 2) Çalışan ise EmployeeView göster
-  if (currentUser === 'employee') {
-    return <EmployeeView />;
-  }
-  // ----------------------------------------------------
-
-  // 3) Admin ise panel
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 dark:text-gray-100">
       {/* Sidebar */}
@@ -386,15 +253,11 @@ function App() {
               <User size={16} />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Admin Kullanıcısı</p>
-              <p className="text-xs text-gray-600 dark:text-gray-300">Yönetici</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{user?.fullName}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300">{user?.role === 'ADMIN' ? 'Yönetici' : ''}</p>
             </div>
             <button
-              onClick={() => {
-                try { sessionStorage.removeItem('token'); } catch {}
-                try { localStorage.removeItem('token'); } catch {}
-                setAuthUser(null);
-              }}
+              onClick={logout}
               className="ml-auto text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-200"
               title="Çıkış"
               aria-label="Çıkış"
@@ -411,4 +274,4 @@ function App() {
   );
 }
 
-export default App;
+export default AdminLayout;
