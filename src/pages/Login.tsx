@@ -11,8 +11,8 @@ export interface LoginProps {
 }
 
 export default function Login({ onSuccess }: LoginProps) {
-  const [email, setEmail] = React.useState('admin@example.com');
-  const [password, setPassword] = React.useState('admin123');
+  const [email, setEmail] = React.useState(import.meta.env.VITE_DEFAULT_EMAIL ?? '');
+  const [password, setPassword] = React.useState(import.meta.env.VITE_DEFAULT_PASSWORD ?? '');
   const [remember, setRemember] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
