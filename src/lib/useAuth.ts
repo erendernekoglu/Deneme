@@ -1,5 +1,6 @@
 import React from 'react';
 import useAuthToken from './useAuthToken';
+import { decodeJwt } from './jwt';
 
 export type AuthUser = {
   id: string;
@@ -7,16 +8,6 @@ export type AuthUser = {
   fullName: string;
   role: 'ADMIN' | 'EMPLOYEE';
 } | null;
-
-function decodeJwt(token: string): any | null {
-  try {
-    const payload = token.split('.')[1];
-    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-    return decoded;
-  } catch {
-    return null;
-  }
-}
 
 function parseUser(token: string | null): AuthUser {
   if (!token) return null;
