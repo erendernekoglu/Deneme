@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Employee, ShiftTemplate, ShiftAssignment, AvailabilityRequest } from '../types/api';
 import { api } from '../lib/api';
 import { toHHmm } from '../lib/time';
-import useAuthToken from '../lib/useAuthToken';
+import { useAuth } from '../lib/useAuth';
 
 const weekStartOf = (d: Date) => {
   const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -20,16 +20,6 @@ const isoFull = (d: Date) => {
   return x.toISOString();
 };
 
-function decodeJwt(token: string): any | null {
-  try {
-    const payload = token.split('.')[1];
-    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-    return decoded;
-  } catch {
-    return null;
-  }
-}
-
 const EmployeeView: React.FC = () => {
   const [me, setMe] = useState<Employee | null>(null);
   const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
@@ -39,33 +29,19 @@ const EmployeeView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const token = useAuthToken();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
         setError(null);
-        let selectedId: string | null = null;
-        try {
-          const t = token;
-          if (t) {
-            const payload = t.split('.')[1];
-            const p = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-            if (p && p.sub) selectedId = String(p.sub);
-          }
-        } catch {}
+        const selectedId = user?.id ?? null;
         const [emps, tpls] = await Promise.all([
           api.get<Employee[]>('/employees'),
           api.get<ShiftTemplate[]>('/shift-templates'),
         ]);
-        if (!selectedId) {
-          // No token/sub: force login
-          if (typeof window !== 'undefined') {
-            window.location.replace('/login');
-          }
-          return;
-        }
+        if (!selectedId) return;
         const candidate = (emps ?? []).find((e) => e.id === selectedId) ?? null;
         if (!candidate) {
           setError('Kullanıcı bulunamadı');
@@ -79,7 +55,7 @@ const EmployeeView: React.FC = () => {
         setLoading(false);
       }
     })();
-  }, [token]);
+  }, [user]);
 
   useEffect(() => {
     (async () => {
@@ -290,7 +266,7 @@ const EmployeeView: React.FC = () => {
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-end gap-2">
               <a href={href} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 text-xs rounded border border-gray-300 hover:bg-gray-50" title="Google Calendar / Apple Calendar’da ‘URL ile abone ol’ seçin.">Takvime abone ol (iCal)</a>
               <button onClick={async () => { try { await navigator.clipboard.writeText(href); } catch {} }} className="px-3 py-1.5 text-xs rounded border border-gray-300 hover:bg-gray-50" title="Linki panoya kopyala">Kopyala</button>
-              <button onClick={() => { try { sessionStorage.removeItem('token'); } catch {}; try { localStorage.removeItem('token'); } catch {}; if (typeof window !== 'undefined') window.location.replace('/login'); }} className="ml-2 px-3 py-1.5 text-xs rounded border border-gray-300 hover:bg-gray-50" title="Çıkış Yap">Çıkış</button>
+              <button onClick={logout} className="ml-2 px-3 py-1.5 text-xs rounded border border-gray-300 hover:bg-gray-50" title="Çıkış Yap">Çıkış</button>
             </div>
           </div>
         );
