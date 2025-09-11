@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Edit, Trash2, Clock } from 'lucide-react';
 import { api } from '../lib/api';
 import type { Department, ShiftTemplate } from '../types/api';
-import { toHHmm, toMinutes } from '../lib/time';
+import { toHHmm } from '../lib/time';
+import Modal from './Modal';
 
 interface ShiftTemplatesPageProps {
   selectedDepartment: string;
@@ -48,6 +49,15 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
     departmentId: '',
   });
 
+  const [dialog, setDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    confirmText?: string;
+    cancelText?: string;
+  }>({ open: false, title: '', message: '' });
+
   // �ablonlar� y�kle
   useEffect(() => {
     (async () => {
@@ -73,6 +83,17 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
       (t) => t.departmentId === selectedDepartment || (generalDeptId && t.departmentId === generalDeptId)
     );
   }, [templates, selectedDepartment, generalDeptId]);
+
+  const closeDialog = () => setDialog((d) => ({ ...d, open: false }));
+  const showConfirm = (msg: string, onConfirm: () => void, title = 'Onay') =>
+    setDialog({
+      open: true,
+      title,
+      message: msg,
+      onConfirm,
+      confirmText: 'Evet',
+      cancelText: 'İptal',
+    });
 
   const openCreate = () => {
     setEditing(null);
@@ -100,10 +121,11 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
     setIsModalOpen(true);
   };
 
-  const remove = async (id: string) => {
-    if (!confirm('Bu vardiya �ablonunu silmek istedi�inize emin misiniz?')) return;
-    await api.del(`/shift-templates/${id}`);
-    setTemplates((prev) => prev.filter((x) => x.id !== id));
+  const remove = (id: string) => {
+    showConfirm('Bu vardiya şablonunu silmek istediğinize emin misiniz?', async () => {
+      await api.del(`/shift-templates/${id}`);
+      setTemplates((prev) => prev.filter((x) => x.id !== id));
+    });
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -364,6 +386,15 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
           </div>
         </div>
       )}
+      <Modal
+        isOpen={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={dialog.onConfirm}
+        onClose={closeDialog}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+      />
     </div>
   );
 };

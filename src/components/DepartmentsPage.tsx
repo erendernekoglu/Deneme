@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Building2, Users } from 'lucide-react';
 import type { Department } from '../types';
 import type { Department as ApiDepartment } from '../types/api';
 import { api } from '../lib/api';
+import Modal from './Modal';
 
 interface DepartmentsPageProps {
   departments: Department[];
@@ -18,6 +19,15 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
     color: '#3B82F6',
   });
 
+  const [dialog, setDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    confirmText?: string;
+    cancelText?: string;
+  }>({ open: false, title: '', message: '' });
+
   const colorOptions = [
     { name: 'Mavi', value: '#3B82F6' },
     { name: 'Yeşil', value: '#10B981' },
@@ -28,6 +38,19 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
     { name: 'İndigo', value: '#6366F1' },
     { name: 'Teal', value: '#14B8A6' },
   ];
+
+  const closeDialog = () => setDialog((d) => ({ ...d, open: false }));
+  const showAlert = (msg: string, title = 'Bilgi') =>
+    setDialog({ open: true, title, message: msg, confirmText: 'Tamam' });
+  const showConfirm = (msg: string, onConfirm: () => void, title = 'Onay') =>
+    setDialog({
+      open: true,
+      title,
+      message: msg,
+      onConfirm,
+      confirmText: 'Evet',
+      cancelText: 'İptal',
+    });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,30 +102,20 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
     setIsModalOpen(true);
   };
 
-  // Persisted delete via API
-  const handleDeleteApi = async (id: string) => {
-    if (window.confirm('Bu birimi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-      await api.del(`/departments/${id}`);
-      setDepartments((prev) => prev.filter((dept) => dept.id !== id));
-    }
-  };
-
-  // Safer variant with better confirmations and error handling
-  const handleDeleteApiSafe = async (id: string) => {
-    if (!window.confirm('Bu birimi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
-    try {
-      await api.del(`/departments/${id}`);
-      setDepartments((prev) => prev.filter((dept) => dept.id !== id));
-      alert('Birim silindi.');
-    } catch (e: any) {
-      alert(`Silme başarısız: ${e?.message ?? 'Bilinmeyen hata'}`);
-    }
-  };
-
   const handleDelete = (id: string) => {
-    if (window.confirm('Bu birimi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
-      setDepartments((prev) => prev.filter((dept) => dept.id !== id));
-    }
+    showConfirm(
+      'Bu birimi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+      async () => {
+        try {
+          await api.del(`/departments/${id}`);
+          setDepartments((prev) => prev.filter((dept) => dept.id !== id));
+          showAlert('Birim silindi.');
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Bilinmeyen hata';
+          showAlert(`Silme başarısız: ${msg}`);
+        }
+      }
+    );
   };
 
   const resetForm = () => {
@@ -152,7 +165,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
                     <Edit size={16} />
                   </button>
                   <button
-                    onClick={() => handleDeleteApiSafe(department.id)}
+                    onClick={() => handleDelete(department.id)}
                     className="text-red-600 hover:text-red-800 p-1"
                     title="Sil"
                   >
@@ -265,6 +278,15 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ departments, setDepar
           </div>
         </div>
       )}
+      <Modal
+        isOpen={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={dialog.onConfirm}
+        onClose={closeDialog}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Edit, Trash2, Search, Mail, User, Key } from 'lucide-react';
 import { api } from '../lib/api';
 import type { Employee, Department, Role } from '../types/api';
+import Modal from './Modal';
 
 interface EmployeesPageProps {
   selectedDepartment: string;
@@ -20,6 +21,15 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [dialog, setDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    confirmText?: string;
+    cancelText?: string;
+  }>({ open: false, title: '', message: '' });
 
   const [formData, setFormData] = useState<{
     fullName: string;
@@ -68,6 +78,19 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({
   const getDepartment = (id?: string | null) =>
     departments.find((d) => d.id === id);
 
+  const closeDialog = () => setDialog((d) => ({ ...d, open: false }));
+  const showAlert = (msg: string, title = 'Bilgi') =>
+    setDialog({ open: true, title, message: msg, confirmText: 'Tamam' });
+  const showConfirm = (msg: string, onConfirm: () => void, title = 'Onay') =>
+    setDialog({
+      open: true,
+      title,
+      message: msg,
+      onConfirm,
+      confirmText: 'Evet',
+      cancelText: 'İptal',
+    });
+
   // ---- CRUD
   const openCreate = () => {
     setEditingEmployee(null);
@@ -93,29 +116,35 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({
     setIsModalOpen(true);
   };
 
-  const removeEmployee = async (id: string) => {
-    if (!confirm('Bu Çalışanı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
-    try {
-      await api.del(`/employees/${id}`);
-      setEmployees((prev) => prev.filter((e) => e.id !== id));
-      alert('Çalışan başarıyla silindi.');
-    } catch (e: any) {
-      alert(`Silme işlemi başarısız: ${e?.message ?? 'Bilinmeyen hata'}`);
-    }
+  const removeEmployee = (id: string) => {
+    showConfirm(
+      'Bu Çalışanı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+      async () => {
+        try {
+          await api.del(`/employees/${id}`);
+          setEmployees((prev) => prev.filter((e) => e.id !== id));
+          showAlert('Çalışan başarıyla silindi.');
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Bilinmeyen hata';
+          showAlert(`Silme işlemi başarısız: ${msg}`);
+        }
+      }
+    );
   };
 
   const setPassword = async (id: string, email: string) => {
     const pwd = window.prompt(`New password for ${email} (min 6 chars):`);
     if (!pwd) return;
     if (pwd.length < 6) {
-      alert('Password must be at least 6 characters.');
+      showAlert('Password must be at least 6 characters.');
       return;
     }
     try {
       await api.post(`/employees/${id}/password`, { password: pwd });
-      alert('Password updated.');
-    } catch (e: any) {
-      alert(`Password update failed: ${e?.message ?? 'Unknown error'}`);
+      showAlert('Password updated.');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      showAlert(`Password update failed: ${msg}`);
     }
   };
 
@@ -143,10 +172,10 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({
       const created = await api.post<Employee>('/employees', payload);
       if (created) setEmployees((prev) => [created, ...prev]);
     }
-    closeModal();
+    closeFormModal();
   };
 
-  const closeModal = () => {
+  const closeFormModal = () => {
     setIsModalOpen(false);
     setEditingEmployee(null);
   };
@@ -401,7 +430,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({
               <div className="flex justify-end gap-3 mt-8">
                 <button
                   type="button"
-                  onClick={closeModal}
+                  onClick={closeFormModal}
                   className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   İptal
@@ -417,6 +446,15 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({
           </div>
         </div>
       )}
+      <Modal
+        isOpen={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={dialog.onConfirm}
+        onClose={closeDialog}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+      />
     </div>
   );
 };
