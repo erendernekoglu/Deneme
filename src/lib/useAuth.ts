@@ -1,5 +1,5 @@
 import React from 'react';
-import useAuthToken from './useAuthToken';
+import getAuthToken from './getAuthToken';
 
 export type AuthUser = {
   id: string;
@@ -8,10 +8,19 @@ export type AuthUser = {
   role: 'ADMIN' | 'EMPLOYEE';
 } | null;
 
-function decodeJwt(token: string): any | null {
+interface JwtPayload {
+  sub?: string | number;
+  email?: string;
+  fullName?: string;
+  role?: string;
+}
+
+function decodeJwt(token: string): JwtPayload | null {
   try {
     const payload = token.split('.')[1];
-    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    const decoded = JSON.parse(
+      atob(payload.replace(/-/g, '+').replace(/_/g, '/')),
+    ) as JwtPayload;
     return decoded;
   } catch {
     return null;
@@ -28,7 +37,7 @@ function parseUser(token: string | null): AuthUser {
 }
 
 export function useAuth() {
-  const token = useAuthToken();
+  const token = getAuthToken();
   const [user, setUser] = React.useState<AuthUser>(() => parseUser(token));
 
   React.useEffect(() => {
@@ -38,10 +47,14 @@ export function useAuth() {
   const logout = React.useCallback(() => {
     try {
       sessionStorage.removeItem('token');
-    } catch {}
+    } catch {
+      /* ignore */
+    }
     try {
       localStorage.removeItem('token');
-    } catch {}
+    } catch {
+      /* ignore */
+    }
     setUser(null);
   }, []);
 
