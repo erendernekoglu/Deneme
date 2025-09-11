@@ -15,7 +15,7 @@ const SwapRequestsPage: React.FC = () => {
     setError(null);
     try {
       const data = await api.get<SwapRequest[]>(`/swap-requests`);
-      setList(data);
+      setList(data ?? []);
     } catch (e: any) {
       setError(e?.message ?? 'Değişim talepleri getirilemedi');
     } finally {

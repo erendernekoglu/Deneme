@@ -136,7 +136,7 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
     (async () => {
       try {
         const fresh = await api.get<Department[]>('/departments');
-        const g = fresh.find((d) => d.name?.toLowerCase() === 'genel' || d.name?.toLowerCase() === 'general');
+        const g = fresh?.find((d) => d.name?.toLowerCase() === 'genel' || d.name?.toLowerCase() === 'general');
         setGeneralDeptId(g?.id ?? null);
       } catch {
         // ignore
@@ -166,8 +166,8 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
           api.get<Employee[]>('/employees'),
           api.get<ShiftTemplate[]>('/shift-templates'),
         ]);
-        setEmployees(emps);
-        setTemplates(tpls);
+        setEmployees(emps ?? []);
+        setTemplates(tpls ?? []);
 
         // Roster getir (overlap edenler döner)
         const start = weekStart;
@@ -192,6 +192,7 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
             startDate: iso(start),
             endDate: iso(end),
           });
+          if (!created) throw new Error('Taslak oluşturulamadı');
           setRoster(created);
         } else {
           setRoster(rosters[0]);
@@ -204,7 +205,7 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
           ...(selectedDepartment !== 'all' ? { departmentId: selectedDepartment } : {}),
         });
         const assigns = await api.get<ShiftAssignment[]>(`/assignments?${qs.toString()}`);
-        setAssignments(assigns);
+        setAssignments(assigns ?? []);
       } catch (e: any) {
         setError(e?.message ?? 'Yükleme hatası');
       } finally {
@@ -285,8 +286,10 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
     if (!roster) return;
     try {
       const updated = await api.post<Roster>(`/rosters/${roster.id}/publish`, {});
-      setRoster(updated);
-      setToastMsg('Yayınlandı');
+      if (updated) {
+        setRoster(updated);
+        setToastMsg('Yayınlandı');
+      }
     } catch (e: any) {
       setError(e?.message ?? 'Yayınlama başarısız');
     }
@@ -296,6 +299,7 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
     if (!roster) return;
     try {
       const draft = await api.post<Roster>(`/rosters/${roster.id}/clone`, {});
+      if (!draft) throw new Error('Taslak oluşturulamadı');
       setRoster(draft);
       setToastMsg('Yeni taslak oluşturuldu');
       const start = weekStart;
@@ -306,7 +310,7 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
         ...(selectedDepartment !== 'all' ? { departmentId: selectedDepartment } : {}),
       });
       const assigns = await api.get<ShiftAssignment[]>(`/assignments?${qs.toString()}`);
-      setAssignments(assigns);
+      setAssignments(assigns ?? []);
     } catch (e: any) {
       setError(e?.message ?? 'Taslak oluşturma başarısız');
     }
@@ -449,7 +453,7 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
         });
         let rList: Roster[] = [];
         try {
-          rList = await api.get<Roster[]>(`/rosters?${qs.toString()}`);
+          rList = (await api.get<Roster[]>(`/rosters?${qs.toString()}`)) ?? [];
         } catch {
           rList = [];
         }
@@ -457,11 +461,13 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
         if (rList.length > 0) {
           r = rList[0];
         } else {
-          r = await api.post<Roster>('/rosters/draft', {
+          const created = await api.post<Roster>('/rosters/draft', {
             departmentId: deptId,
             startDate: iso(start),
             endDate: iso(end),
           });
+          if (!created) throw new Error('Roster oluşturulamadı');
+          r = created;
         }
         rosterByDept.set(deptId, r);
         // update main roster if current department matches
@@ -538,7 +544,9 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
       try {
         const body: any = { employeeId: targetEmp, date: new Date(`${targetDate}T00:00:00`).toISOString() };
         const updated = await api.put<ShiftAssignment>(`/assignments/${assnId}`, body);
-        setAssignments((list) => list.map((a) => (a.id === assnId ? { ...a, ...updated } : a)));
+        if (updated)
+          setAssignments((list) => list.map((a) => (a.id === assnId ? { ...a, ...updated } : a)));
+        else setAssignments(prev);
       } catch (e: any) {
         // revert on error
         setAssignments(prev);
@@ -557,7 +565,7 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
     const qs = new URLSearchParams({ startDate: iso(start), endDate: iso(end), departmentId: deptId });
     let rList: Roster[] = [];
     try {
-      rList = await api.get<Roster[]>(`/rosters?${qs.toString()}`);
+      rList = (await api.get<Roster[]>(`/rosters?${qs.toString()}`)) ?? [];
     } catch {
       rList = [];
     }
@@ -565,11 +573,13 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
     if (rList.length > 0) {
       r = rList[0];
     } else {
-      r = await api.post<Roster>('/rosters/draft', {
+      const created = await api.post<Roster>('/rosters/draft', {
         departmentId: deptId,
         startDate: iso(start),
         endDate: iso(end),
       });
+      if (!created) throw new Error('Roster oluşturulamadı');
+      r = created;
     }
     // Eğer seçili departman buysa ana roster'ı güncelle
     if (selectedDepartment !== 'all' && selectedDepartment === deptId) setRoster(r);
@@ -614,7 +624,7 @@ const SchedulesPage: React.FC<SchedulesPageProps> = ({
       if (addTemplateId) body.templateId = addTemplateId;
       body.type = addType; // REGULAR/OVERTIME
       const created = await api.post<ShiftAssignment>('/assignments', body);
-      setAssignments((prev) => [created, ...prev]);
+      if (created) setAssignments((prev) => [created, ...prev]);
       // Kapat ve temizle
       setAddOpen(false);
       setAddEmployee(null);

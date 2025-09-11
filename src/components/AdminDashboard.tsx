@@ -65,9 +65,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           ...(selectedDepartment !== 'all' ? { departmentId: selectedDepartment } : {}),
         });
         const list = await api.get<ShiftAssignment[]>(`/assignments?${qs.toString()}`);
-        setAssignments(list);
+        setAssignments(list ?? []);
         const allEmps = await api.get<Employee[]>(`/employees`);
-        setEmpList(allEmps);
+        setEmpList(allEmps ?? []);
       } catch (e: any) {
         // Başarısız olursa props ile devam et
         setAssignments(shiftAssignments ?? []);

@@ -11,12 +11,12 @@ interface ShiftTemplatesPageProps {
 }
 
 const colorOptions = [
-  { name: 'Sarý',   value: '#FEF3C7', text: 'text-yellow-800' },
+  { name: 'Sarï¿½',   value: '#FEF3C7', text: 'text-yellow-800' },
   { name: 'Turuncu', value: '#FED7AA', text: 'text-orange-800' },
   { name: 'Mor',    value: '#E9D5FF', text: 'text-purple-800' },
   { name: 'Mavi',   value: '#DBEAFE', text: 'text-blue-800' },
-  { name: 'Yeþil',  value: '#D1FAE5', text: 'text-green-800' },
-  { name: 'Kýrmýzý', value: '#FEE2E2', text: 'text-red-800' },
+  { name: 'Yeï¿½il',  value: '#D1FAE5', text: 'text-green-800' },
+  { name: 'Kï¿½rmï¿½zï¿½', value: '#FEE2E2', text: 'text-red-800' },
 ];
 
 const getColorOption = (color: string) =>
@@ -48,25 +48,25 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
     departmentId: '',
   });
 
-  // Þablonlarý yükle
+  // ï¿½ablonlarï¿½ yï¿½kle
   useEffect(() => {
     (async () => {
       try {
         const tpls = await api.get<ShiftTemplate[]>('/shift-templates');
-        setTemplates(tpls);
+        setTemplates(tpls ?? []);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  // 'Genel' (global) þablon desteði: adý 'Genel' veya 'General' olan birim tüm birimlerde geçerli sayýlýr
+  // 'Genel' (global) ï¿½ablon desteï¿½i: adï¿½ 'Genel' veya 'General' olan birim tï¿½m birimlerde geï¿½erli sayï¿½lï¿½r
   const generalDeptId = useMemo(() => {
     const m = departments.find((d) => d.name?.toLowerCase() === 'genel' || d.name?.toLowerCase() === 'general');
     return m?.id ?? null;
   }, [departments]);
 
-  // Departman filtresi (seçili birim + Genel)
+  // Departman filtresi (seï¿½ili birim + Genel)
   const list = useMemo(() => {
     if (selectedDepartment === 'all') return templates;
     return templates.filter(
@@ -101,7 +101,7 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
   };
 
   const remove = async (id: string) => {
-    if (!confirm('Bu vardiya þablonunu silmek istediðinize emin misiniz?')) return;
+    if (!confirm('Bu vardiya ï¿½ablonunu silmek istediï¿½inize emin misiniz?')) return;
     await api.del(`/shift-templates/${id}`);
     setTemplates((prev) => prev.filter((x) => x.id !== id));
   };
@@ -123,31 +123,32 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
         `/shift-templates/${editing.id}`,
         payload
       );
+      if (updated)
       setTemplates((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
     } else {
       const created = await api.post<ShiftTemplate>('/shift-templates', payload);
-      setTemplates((prev) => [created, ...prev]);
+      if (created) setTemplates((prev) => [created, ...prev]);
     }
     setIsModalOpen(false);
     setEditing(null);
   };
 
-  if (loading) return <div className="p-8">Yükleniyor…</div>;
+  if (loading) return <div className="p-8">Yï¿½kleniyorï¿½</div>;
 
   return (
     <div className="p-8">
-      {/* Baþlýk */}
+      {/* Baï¿½lï¿½k */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Vardiya Þablonlarý</h1>
-          <p className="text-gray-600">Vardiya türlerini ve saat aralýklarýný yönetin</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Vardiya ï¿½ablonlarï¿½</h1>
+          <p className="text-gray-600">Vardiya tï¿½rlerini ve saat aralï¿½klarï¿½nï¿½ yï¿½netin</p>
         </div>
         <button
           onClick={openCreate}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
         >
           <Plus size={20} className="mr-2" />
-          Yeni Þablon Ekle
+          Yeni ï¿½ablon Ekle
         </button>
       </div>
 
@@ -163,7 +164,7 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
             onChange={(e) => setSelectedDepartment(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="all">Tüm Birimler</option>
+            <option value="all">Tï¿½m Birimler</option>
             {departments.map((dept) => (
               <option key={dept.id} value={dept.id}>
                 {dept.name}
@@ -198,7 +199,7 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
                     <button
                       onClick={() => openEdit(t)}
                       className="text-blue-600 hover:text-blue-800 p-1"
-                      title="Düzenle"
+                      title="Dï¿½zenle"
                     >
                       <Edit size={16} />
                     </button>
@@ -229,7 +230,7 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
       {list.length === 0 && (
         <div className="text-center py-12">
           <Clock size={48} className="mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">Henüz vardiya þablonu eklenmemiþ.</p>
+          <p className="text-gray-600">Henï¿½z vardiya ï¿½ablonu eklenmemiï¿½.</p>
         </div>
       )}
 
@@ -238,24 +239,24 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              {editing ? 'Þablon Düzenle' : 'Yeni Þablon Ekle'}
+              {editing ? 'ï¿½ablon Dï¿½zenle' : 'Yeni ï¿½ablon Ekle'}
             </h2>
             <form onSubmit={submit}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Vardiya Adý</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Vardiya Adï¿½</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="örn. Gündüz"
+                    placeholder="ï¿½rn. Gï¿½ndï¿½z"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kýsa Kod</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Kï¿½sa Kod</label>
                   <input
                     type="text"
                     required
@@ -265,7 +266,7 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
                       setFormData({ ...formData, code: e.target.value.toUpperCase() })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="örn. G"
+                    placeholder="ï¿½rn. G"
                   />
                 </div>
 
@@ -277,7 +278,7 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
                     onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">Birim Seçin</option>
+                    <option value="">Birim Seï¿½in</option>
                     {departments.map((dept) => (
                       <option key={dept.id} value={dept.id}>
                         {dept.name}
@@ -288,7 +289,7 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Baþlangýç Saati</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Baï¿½langï¿½ï¿½ Saati</label>
                     <input
                       type="time"
                       required
@@ -298,7 +299,7 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Bitiþ Saati</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bitiï¿½ Saati</label>
                     <input
                       type="time"
                       required
@@ -310,7 +311,7 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Renk Seçimi</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Renk Seï¿½imi</label>
                   <div className="grid grid-cols-6 gap-2">
                     {colorOptions.map((o) => (
                       <button
@@ -327,15 +328,15 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
                   </div>
                 </div>
 
-                {/* Önizleme */}
+                {/* ï¿½nizleme */}
                 <div className="mt-6 p-4 border border-gray-200 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Önizleme:</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">ï¿½nizleme:</h4>
                   <div className="rounded-lg p-4 text-center" style={{ backgroundColor: formData.color }}>
                     <div className={`text-2xl font-bold ${getColorOption(formData.color).text} mb-1`}>
                       {formData.code || 'KOD'}
                     </div>
                     <div className={`text-sm ${getColorOption(formData.color).text} font-medium mb-2`}>
-                      {formData.name || 'Vardiya Adý'}
+                      {formData.name || 'Vardiya Adï¿½'}
                     </div>
                     <div className={`text-xs ${getColorOption(formData.color).text}`}>
                       {(formData.startTime || '00:00')} - {(formData.endTime || '00:00')}
@@ -353,10 +354,10 @@ const ShiftTemplatesPage: React.FC<ShiftTemplatesPageProps> = ({
                   }}
                   className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  Ýptal
+                  ï¿½ptal
                 </button>
                 <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  {editing ? 'Güncelle' : 'Ekle'}
+                  {editing ? 'Gï¿½ncelle' : 'Ekle'}
                 </button>
               </div>
             </form>

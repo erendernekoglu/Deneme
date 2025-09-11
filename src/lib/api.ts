@@ -2,10 +2,10 @@
 // Override with VITE_API_BASE in production if needed.
 const BASE = import.meta.env.VITE_API_BASE ?? '/api';
 
-async function handle<T>(res: Response): Promise<T> {
+async function handle<T>(res: Response): Promise<T | undefined> {
   if (res.ok) {
     // 204 gibi gövdessiz cevaplar için koruma
-    if (res.status === 204) return undefined as unknown as T;
+    if (res.status === 204) return undefined;
     return res.json();
   }
   let detail = '';
@@ -19,11 +19,11 @@ async function handle<T>(res: Response): Promise<T> {
 }
 
 export const api = {
-  async get<T>(p: string): Promise<T> {
+  async get<T>(p: string): Promise<T | undefined> {
     const r = await fetch(`${BASE}${p}`, { headers: withAuth({ Accept: 'application/json' }) });
     return handle<T>(r);
   },
-  async post<T>(p: string, body: any): Promise<T> {
+  async post<T>(p: string, body: any): Promise<T | undefined> {
     const r = await fetch(`${BASE}${p}`, {
       method: 'POST',
       headers: withAuth({ 'Content-Type': 'application/json', Accept: 'application/json' }),
@@ -31,7 +31,7 @@ export const api = {
     });
     return handle<T>(r);
   },
-  async put<T>(p: string, body: any): Promise<T> {
+  async put<T>(p: string, body: any): Promise<T | undefined> {
     const r = await fetch(`${BASE}${p}`, {
       method: 'PUT',
       headers: withAuth({ 'Content-Type': 'application/json', Accept: 'application/json' }),
@@ -39,7 +39,7 @@ export const api = {
     });
     return handle<T>(r);
   },
-  async patch<T>(p: string, body: any): Promise<T> {
+  async patch<T>(p: string, body: any): Promise<T | undefined> {
     const r = await fetch(`${BASE}${p}`, {
       method: 'PATCH',
       headers: withAuth({ 'Content-Type': 'application/json', Accept: 'application/json' }),
