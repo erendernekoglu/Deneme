@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Employee, ShiftTemplate, ShiftAssignment, AvailabilityRequest } from '../types/api';
 import { api } from '../lib/api';
 import { toHHmm } from '../lib/time';
+import useAuthToken from '../lib/useAuthToken';
 
 const weekStartOf = (d: Date) => {
   const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -38,6 +39,8 @@ const EmployeeView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const token = useAuthToken();
+
   useEffect(() => {
     (async () => {
       try {
@@ -45,9 +48,7 @@ const EmployeeView: React.FC = () => {
         setError(null);
         let selectedId: string | null = null;
         try {
-          const t = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('token'))
-            || (typeof localStorage !== 'undefined' && localStorage.getItem('token'))
-            || null;
+          const t = token;
           if (t) {
             const payload = t.split('.')[1];
             const p = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
@@ -78,7 +79,7 @@ const EmployeeView: React.FC = () => {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     (async () => {

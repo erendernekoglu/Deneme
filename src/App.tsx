@@ -13,6 +13,7 @@ import type { UserRole, Employee, ShiftTemplate, ShiftAssignment, Department } f
 import { api } from './lib/api';
 import type { Department as ApiDepartment } from './types/api';
 import Login from './pages/Login';
+import useAuthToken from './lib/useAuthToken';
 
 // Mock data (UI tipleri)
 const mockDepartments: Department[] = [
@@ -63,11 +64,10 @@ function decodeJwt(token: string): any | null {
 }
 
 function App() {
+  const token = useAuthToken();
   const [authUser, setAuthUser] = useState<AuthUser>(() => {
     try {
-      const t = (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined' && sessionStorage.getItem('token'))
-        || (typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage.getItem('token'))
-        || null;
+      const t = token;
       if (!t) return null;
       const p = decodeJwt(t);
       if (p && (p.role === 'ADMIN' || p.role === 'EMPLOYEE') && p.sub) {

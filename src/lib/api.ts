@@ -1,3 +1,5 @@
+import useAuthToken from './useAuthToken';
+
 // Default API base uses Vite dev proxy (see vite.config.ts)
 // Override with VITE_API_BASE in production if needed.
 const BASE = import.meta.env.VITE_API_BASE ?? '/api';
@@ -65,14 +67,7 @@ export const reports = {
 };
 
 function withAuth(init: Record<string, string>) {
-  try {
-    // Prefer sessionStorage (non-remembered sessions), fallback to localStorage
-    const token = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('token'))
-      || (typeof localStorage !== 'undefined' && localStorage.getItem('token'))
-      || null;
-    if (token) return { ...init, Authorization: `Bearer ${token}` };
-  } catch {
-    // ignore in non-browser envs
-  }
-  return init;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const token = useAuthToken();
+  return token ? { ...init, Authorization: `Bearer ${token}` } : init;
 }
